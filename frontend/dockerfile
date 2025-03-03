@@ -1,27 +1,29 @@
-# Use an official Maven image to build the project (with OpenJDK 17)
-FROM maven:3.8.5-openjdk-17 AS build
+# Step 1: Use an official Node.js runtime as a parent image to build the React app
+FROM node:18 AS build
 
-# Set the working directory
-WORKDIR /app
+# Step 2: Set the working directory
+WORKDIR /usr/src/app
 
-# Copy the pom.xml and the source code into the container
-COPY pom.xml .
-COPY src ./src
+# Step 3: Copy package.json and package-lock.json to install dependencies
+COPY package*.json ./
 
-# Build the application
-RUN mvn clean install -DskipTests
+# Step 4: Install the React dependencies
+RUN npm install
 
-# Use OpenJDK 17 to run the application
-FROM openjdk:17-jdk-slim
+# Step 5: Copy the rest of the application code
+COPY . .
 
-# Set the working directory
-WORKDIR /app
+# Step 6: Build the React app
+RUN npm run build
 
-# Copy the built jar file from the build container
-COPY --from=build /app/target/*.jar app.jar
+# Step 7: Use a lightweight web server to serve the React app (nginx is a good option)
+FROM nginx:alpine
 
-# Expose the port the app will run on
-EXPOSE 8080
+# Step 8: Copy the build folder to the nginx server
+COPY --from=build /usr/src/app/dist /usr/share/nginx/html
 
-# Run the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Step 9: Expose port 80 for the React app
+EXPOSE 80
+
+# Step 10: Command to run nginx server
+CMD ["nginx", "-g", "daemon off;"]

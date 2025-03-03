@@ -1,0 +1,54 @@
+version: "3.6"
+
+services:
+  mysql-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: crud_db
+      MYSQL_USER: test
+      MYSQL_PASSWORD: test
+    networks:
+      - mynetwork
+    volumes:
+      - mysql-data:/var/lib/mysql
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  node-backend:
+    image: nizarmlaouihi/node-backend:v1
+    environment:
+      DB_HOST: mysql-db
+      DB_USER: test
+      DB_PASSWORD: test
+      DB_DATABASE: crud_db
+    depends_on:
+      - mysql-db
+    networks:
+      - mynetwork
+    ports:
+      - "3000:3000"
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+
+  frontend:
+    image: nizarmlaouihi/frontend:v1
+    ports:
+      - "8080:80"
+    networks:
+      - mynetwork
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+
+networks:
+  mynetwork:
+    driver: overlay
+
+volumes:
+  mysql-data:
